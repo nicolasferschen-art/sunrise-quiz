@@ -15,6 +15,8 @@
     .section-label { font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 500; margin-bottom: 8px; }
     textarea { width: 100%; min-height: 220px; padding: 12px; font-size: 14px; font-family: inherit; border: 0.5px solid rgba(0,0,0,0.2); border-radius: 8px; background: #fafafa; color: #1a1a1a; resize: vertical; line-height: 1.6; }
     textarea:focus { outline: none; border-color: rgba(0,0,0,0.4); background: #fff; }
+    input[type=password], input[type=text] { width: 100%; padding: 10px 12px; font-size: 14px; font-family: inherit; border: 0.5px solid rgba(0,0,0,0.2); border-radius: 8px; background: #fafafa; color: #1a1a1a; }
+    input:focus { outline: none; border-color: rgba(0,0,0,0.4); background: #fff; }
     .hint { font-size: 12px; color: #999; margin-top: 8px; line-height: 1.5; }
     .controls { display: flex; gap: 10px; align-items: center; margin-top: 14px; flex-wrap: wrap; }
     select { padding: 8px 12px; font-size: 14px; border: 0.5px solid rgba(0,0,0,0.2); border-radius: 8px; background: #fff; color: #1a1a1a; cursor: pointer; }
@@ -23,6 +25,8 @@
     .btn-primary:disabled { opacity: 0.35; cursor: not-allowed; }
     .btn-secondary { padding: 8px 16px; font-size: 13px; border: 0.5px solid rgba(0,0,0,0.2); border-radius: 8px; background: transparent; color: #1a1a1a; cursor: pointer; }
     .btn-secondary:hover { background: #f0f0ee; }
+    .btn-small { padding: 6px 12px; font-size: 12px; border: 0.5px solid rgba(0,0,0,0.2); border-radius: 6px; background: transparent; color: #666; cursor: pointer; margin-left: 8px; }
+    .btn-small:hover { background: #f0f0ee; }
     .loading { display: none; align-items: center; gap: 10px; padding: 1.5rem 0; color: #888; font-size: 14px; }
     .dot { width: 6px; height: 6px; border-radius: 50%; background: #bbb; animation: pulse 1.2s infinite; }
     .dot:nth-child(2) { animation-delay: 0.2s; }
@@ -50,6 +54,10 @@
     .answer-box.visible { display: block; }
     .answer-label { font-weight: 500; color: #1a1a1a; margin-bottom: 4px; }
     .error { color: #a32d2d; font-size: 14px; margin-top: 1rem; padding: 12px; background: #fcebeb; border-radius: 8px; }
+    .key-status { font-size: 12px; margin-top: 8px; }
+    .key-status.ok { color: #3b6d11; }
+    .key-status.missing { color: #a32d2d; }
+    #apiSection { display: none; }
     @media (max-width: 480px) { .controls { flex-direction: column; align-items: stretch; } .btn-primary { text-align: center; } }
   </style>
 </head>
@@ -60,11 +68,25 @@
     <p>Mehrere News einfügen → pro Beitrag werden separate Fragen erstellt</p>
   </header>
 
+  <div class="card" id="keyCard">
+    <div style="display:flex; align-items:center; justify-content:space-between;">
+      <div class="section-label">Anthropic API Key</div>
+      <button class="btn-small" onclick="toggleKeySection()">Ändern</button>
+    </div>
+    <div id="keyStatus" class="key-status missing">Kein API Key gespeichert</div>
+    <div id="apiSection" style="margin-top:12px;">
+      <input type="password" id="apiKeyInput" placeholder="sk-ant-api03-..." />
+      <p class="hint">Der Key wird nur in deinem Browser gespeichert – nie auf einem Server.</p>
+      <div style="margin-top:10px;">
+        <button class="btn-primary" onclick="saveKey()">Key speichern</button>
+      </div>
+    </div>
+  </div>
+
   <div class="card">
     <div class="section-label">News-Inhalte einfügen</div>
     <textarea id="newsInput" placeholder="Füge hier dein gesamtes News-Update ein – z.B. das Wirtschafts & Finanz-Update mit mehreren Beiträgen. Der Generator erkennt automatisch die einzelnen News und erstellt pro Beitrag separate Fragen."></textarea>
-    <p class="hint">Tipp: Einfach den gesamten Text aus der sunrise.app Extension hineinkopieren – je mehr Beiträge, desto mehr Fragen.</p>
-
+    <p class="hint">Tipp: Einfach den gesamten Text aus der sunrise.app Extension hineinkopieren.</p>
     <div class="controls">
       <select id="perNewsSelect">
         <option value="1">1 Frage pro Beitrag</option>
@@ -77,7 +99,6 @@
       </select>
       <button class="btn-primary" id="generateBtn" onclick="generateQuiz()">Quiz generieren</button>
     </div>
-
     <div id="loadingDiv" class="loading">
       <div class="dot"></div><div class="dot"></div><div class="dot"></div>
       <span id="loadingText">Beiträge werden analysiert...</span>
@@ -89,10 +110,42 @@
 </div>
 
 <script>
-const API_KEY = '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';
 let allQuestions = [];
 
+function getKey() { return localStorage.getItem('sunrise_api_key') || ''; }
+
+function saveKey() {
+  const key = document.getElementById('apiKeyInput').value.trim();
+  if (!key.startsWith('sk-ant')) { alert('Bitte einen gültigen Anthropic API Key eingeben (beginnt mit sk-ant...)'); return; }
+  localStorage.setItem('sunrise_api_key', key);
+  document.getElementById('apiKeyInput').value = '';
+  updateKeyStatus();
+  document.getElementById('apiSection').style.display = 'none';
+}
+
+function toggleKeySection() {
+  const s = document.getElementById('apiSection');
+  s.style.display = s.style.display === 'none' ? 'block' : 'none';
+}
+
+function updateKeyStatus() {
+  const key = getKey();
+  const el = document.getElementById('keyStatus');
+  if (key) {
+    el.textContent = 'API Key gespeichert: ' + key.substring(0, 18) + '...';
+    el.className = 'key-status ok';
+  } else {
+    el.textContent = 'Kein API Key gespeichert – bitte eintragen';
+    el.className = 'key-status missing';
+    document.getElementById('apiSection').style.display = 'block';
+  }
+}
+
+updateKeyStatus();
+
 async function generateQuiz() {
+  const key = getKey();
+  if (!key) { showError('Bitte zuerst den API Key eintragen.'); document.getElementById('apiSection').style.display = 'block'; return; }
   const text = document.getElementById('newsInput').value.trim();
   if (!text || text.length < 80) { showError('Bitte füge mehr Text ein.'); return; }
 
@@ -110,7 +163,7 @@ async function generateQuiz() {
 
   let articles;
   try {
-    articles = await splitArticles(text);
+    articles = await splitArticles(text, key);
   } catch(e) {
     showError('Fehler beim Aufteilen: ' + e.message);
     btn.disabled = false;
@@ -119,7 +172,7 @@ async function generateQuiz() {
   }
 
   if (!articles || articles.length === 0) {
-    showError('Keine Beiträge erkannt. Bitte prüfe den Text.');
+    showError('Keine Beiträge erkannt.');
     btn.disabled = false;
     document.getElementById('loadingDiv').style.display = 'none';
     return;
@@ -128,52 +181,37 @@ async function generateQuiz() {
   for (let i = 0; i < articles.length; i++) {
     setLoadingText(`Beitrag ${i+1} von ${articles.length} wird verarbeitet...`);
     try {
-      const questions = await generateForArticle(articles[i].content, perNews, lang);
+      const questions = await generateForArticle(articles[i].content, perNews, lang, key);
       allQuestions.push({ newsTitle: articles[i].title, newsIndex: i, questions });
     } catch(e) { console.warn('Fehler bei Beitrag', i+1, e); }
   }
 
   btn.disabled = false;
   document.getElementById('loadingDiv').style.display = 'none';
-
   if (allQuestions.length === 0) { showError('Keine Fragen generiert. Bitte versuche es nochmal.'); return; }
   renderAllQuiz();
 }
 
-async function splitArticles(text) {
-  const prompt = `Analysiere diesen News-Feed und trenne die einzelnen Beiträge.
-Antworte NUR mit einem JSON-Array, ohne Markdown, ohne Backticks.
-Format: [{"title": "Kurzer Titel (max 60 Zeichen)", "content": "Vollständiger Beitragstext"}]
-Ignoriere Datum/Uhrzeit-Header. Mindestlänge pro Beitrag: 30 Wörter.
-
-Text:
-${text.substring(0, 6000)}`;
-
-  const data = await callAPI(prompt);
+async function splitArticles(text, key) {
+  const prompt = `Analysiere diesen News-Feed und trenne die einzelnen Beiträge.\nAntworte NUR mit einem JSON-Array, ohne Markdown, ohne Backticks.\nFormat: [{"title": "Kurzer Titel (max 60 Zeichen)", "content": "Vollständiger Beitragstext"}]\nIgnoriere Datum/Uhrzeit-Header. Mindestlänge pro Beitrag: 30 Wörter.\n\nText:\n${text.substring(0, 6000)}`;
+  const data = await callAPI(prompt, key);
   const raw = data.content?.[0]?.text || '';
   return JSON.parse(raw.replace(/```json|```/g, '').trim());
 }
 
-async function generateForArticle(content, perNews, lang) {
-  const prompt = `Erstelle genau ${perNews} Quiz-Frage(n) auf ${lang} zu diesem Beitrag.
-Antworte NUR mit JSON-Array, ohne Markdown, ohne Backticks.
-Format: [{"frage": "...?", "optionen": ["A", "B", "C"], "richtig": 0, "erklaerung": "..."}]
-"richtig" = Index der richtigen Option (0, 1 oder 2).
-
-Beitrag:
-${content.substring(0, 2000)}`;
-
-  const data = await callAPI(prompt);
+async function generateForArticle(content, perNews, lang, key) {
+  const prompt = `Erstelle genau ${perNews} Quiz-Frage(n) auf ${lang} zu diesem Beitrag.\nAntworte NUR mit JSON-Array, ohne Markdown, ohne Backticks.\nFormat: [{"frage": "...?", "optionen": ["A", "B", "C"], "richtig": 0, "erklaerung": "..."}]\n"richtig" = Index der richtigen Option (0, 1 oder 2).\n\nBeitrag:\n${content.substring(0, 2000)}`;
+  const data = await callAPI(prompt, key);
   const raw = data.content?.[0]?.text || '';
   return JSON.parse(raw.replace(/```json|```/g, '').trim());
 }
 
-async function callAPI(prompt) {
+async function callAPI(prompt, key) {
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'x-api-key': API_KEY,
+      'x-api-key': key,
       'anthropic-version': '2023-06-01',
       'anthropic-dangerous-direct-browser-access': 'true'
     },
@@ -188,38 +226,15 @@ function renderAllQuiz() {
   const letters = ['A', 'B', 'C'];
   const results = document.getElementById('resultsDiv');
   const totalQ = allQuestions.reduce((s, g) => s + g.questions.length, 0);
-
-  let html = `<div class="divider"></div>
-    <div class="results-header">
-      <span>${totalQ} Fragen aus ${allQuestions.length} Beiträgen</span>
-      <button class="btn-secondary" onclick="exportQuiz()">Als .txt exportieren</button>
-    </div>`;
-
+  let html = `<div class="divider"></div><div class="results-header"><span>${totalQ} Fragen aus ${allQuestions.length} Beiträgen</span><button class="btn-secondary" onclick="exportQuiz()">Als .txt exportieren</button></div>`;
   let gq = 0;
   allQuestions.forEach((group, gi) => {
-    html += `<div class="news-group">
-      <div class="news-group-header">
-        <span class="news-group-num">Beitrag ${gi+1}</span>
-        <span class="news-group-title">${group.newsTitle}</span>
-      </div>`;
-
+    html += `<div class="news-group"><div class="news-group-header"><span class="news-group-num">Beitrag ${gi+1}</span><span class="news-group-title">${group.newsTitle}</span></div>`;
     group.questions.forEach((q, qi) => {
-      const qid = `q${gi}_${qi}`;
-      gq++;
-      html += `<div class="quiz-card">
-        <div class="quiz-num">Frage ${gq}</div>
-        <div class="quiz-question">${q.frage}</div>
-        <div class="options" id="opts-${qid}">`;
-      q.optionen.forEach((opt, j) => {
-        html += `<div class="option" onclick="selectOption('${qid}',${j},${q.richtig})"><span class="option-letter">${letters[j]}</span><span>${opt}</span></div>`;
-      });
-      html += `</div>
-        <button class="show-answer-btn" onclick="showAnswer('${qid}',${q.richtig})">Auflösung anzeigen</button>
-        <div class="answer-box" id="answer-${qid}">
-          <div class="answer-label">Richtige Antwort: ${letters[q.richtig]}</div>
-          ${q.erklaerung}
-        </div>
-      </div>`;
+      const qid = `q${gi}_${qi}`; gq++;
+      html += `<div class="quiz-card"><div class="quiz-num">Frage ${gq}</div><div class="quiz-question">${q.frage}</div><div class="options" id="opts-${qid}">`;
+      q.optionen.forEach((opt, j) => { html += `<div class="option" onclick="selectOption('${qid}',${j},${q.richtig})"><span class="option-letter">${letters[j]}</span><span>${opt}</span></div>`; });
+      html += `</div><button class="show-answer-btn" onclick="showAnswer('${qid}',${q.richtig})">Auflösung anzeigen</button><div class="answer-box" id="answer-${qid}"><div class="answer-label">Richtige Antwort: ${letters[q.richtig]}</div>${q.erklaerung}</div></div>`;
     });
     html += `</div>`;
   });
@@ -227,19 +242,12 @@ function renderAllQuiz() {
 }
 
 function selectOption(qid, oi, richtig) {
-  document.querySelectorAll(`#opts-${qid} .option`).forEach((el, j) => {
-    el.onclick = null;
-    if (j === richtig) el.classList.add('correct');
-    else if (j === oi) el.classList.add('wrong');
-  });
+  document.querySelectorAll(`#opts-${qid} .option`).forEach((el, j) => { el.onclick = null; if (j === richtig) el.classList.add('correct'); else if (j === oi) el.classList.add('wrong'); });
   document.getElementById(`answer-${qid}`).classList.add('visible');
 }
 
 function showAnswer(qid, richtig) {
-  document.querySelectorAll(`#opts-${qid} .option`).forEach((el, j) => {
-    el.onclick = null;
-    if (j === richtig) el.classList.add('correct');
-  });
+  document.querySelectorAll(`#opts-${qid} .option`).forEach((el, j) => { el.onclick = null; if (j === richtig) el.classList.add('correct'); });
   document.getElementById(`answer-${qid}`).classList.add('visible');
 }
 
@@ -251,12 +259,7 @@ function exportQuiz() {
   let gq = 0;
   allQuestions.forEach((group, gi) => {
     txt += `BEITRAG ${gi+1}: ${group.newsTitle.toUpperCase()}\n` + '-'.repeat(40) + '\n\n';
-    group.questions.forEach(q => {
-      gq++;
-      txt += `Frage ${gq}: ${q.frage}\n`;
-      q.optionen.forEach((o,j) => txt += `  ${letters[j]}) ${o}\n`);
-      txt += `Antwort: ${letters[q.richtig]}\nErklärung: ${q.erklaerung}\n\n`;
-    });
+    group.questions.forEach(q => { gq++; txt += `Frage ${gq}: ${q.frage}\n`; q.optionen.forEach((o,j) => txt += `  ${letters[j]}) ${o}\n`); txt += `Antwort: ${letters[q.richtig]}\nErklärung: ${q.erklaerung}\n\n`; });
   });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([txt], {type:'text/plain'}));
