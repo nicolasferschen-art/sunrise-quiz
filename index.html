@@ -65,18 +65,18 @@
 <div class="page">
   <header>
     <h1>Sunrise Quiz Generator</h1>
-    <p>Mehrere News einfügen → pro Beitrag werden separate Fragen erstellt</p>
+    <p>Mehrere News einfÃ¼gen â pro Beitrag werden separate Fragen erstellt</p>
   </header>
 
   <div class="card" id="keyCard">
     <div style="display:flex; align-items:center; justify-content:space-between;">
       <div class="section-label">Anthropic API Key</div>
-      <button class="btn-small" onclick="toggleKeySection()">Ändern</button>
+      <button class="btn-small" onclick="toggleKeySection()">Ãndern</button>
     </div>
     <div id="keyStatus" class="key-status missing">Kein API Key gespeichert</div>
     <div id="apiSection" style="margin-top:12px;">
       <input type="password" id="apiKeyInput" placeholder="sk-ant-api03-..." />
-      <p class="hint">Der Key wird nur in deinem Browser gespeichert – nie auf einem Server.</p>
+      <p class="hint">Der Key wird nur in deinem Browser gespeichert â nie auf einem Server.</p>
       <div style="margin-top:10px;">
         <button class="btn-primary" onclick="saveKey()">Key speichern</button>
       </div>
@@ -84,8 +84,8 @@
   </div>
 
   <div class="card">
-    <div class="section-label">News-Inhalte einfügen</div>
-    <textarea id="newsInput" placeholder="Füge hier dein gesamtes News-Update ein – z.B. das Wirtschafts & Finanz-Update mit mehreren Beiträgen. Der Generator erkennt automatisch die einzelnen News und erstellt pro Beitrag separate Fragen."></textarea>
+    <div class="section-label">News-Inhalte einfÃ¼gen</div>
+    <textarea id="newsInput" placeholder="FÃ¼ge hier dein gesamtes News-Update ein â z.B. das Wirtschafts & Finanz-Update mit mehreren BeitrÃ¤gen. Der Generator erkennt automatisch die einzelnen News und erstellt pro Beitrag separate Fragen."></textarea>
     <p class="hint">Tipp: Einfach den gesamten Text aus der sunrise.app Extension hineinkopieren.</p>
     <div class="controls">
       <select id="perNewsSelect">
@@ -101,7 +101,7 @@
     </div>
     <div id="loadingDiv" class="loading">
       <div class="dot"></div><div class="dot"></div><div class="dot"></div>
-      <span id="loadingText">Beiträge werden analysiert...</span>
+      <span id="loadingText">BeitrÃ¤ge werden analysiert...</span>
     </div>
     <div id="errorDiv"></div>
   </div>
@@ -116,7 +116,7 @@ function getKey() { return localStorage.getItem('sunrise_api_key') || ''; }
 
 function saveKey() {
   const key = document.getElementById('apiKeyInput').value.trim();
-  if (!key.startsWith('sk-ant')) { alert('Bitte einen gültigen Anthropic API Key eingeben (beginnt mit sk-ant...)'); return; }
+  if (!key.startsWith('sk-ant')) { alert('Bitte einen gÃ¼ltigen Anthropic API Key eingeben (beginnt mit sk-ant...)'); return; }
   localStorage.setItem('sunrise_api_key', key);
   document.getElementById('apiKeyInput').value = '';
   updateKeyStatus();
@@ -129,13 +129,13 @@ function toggleKeySection() {
 }
 
 function updateKeyStatus() {
-  const key = getKey();
+  const key = '';
   const el = document.getElementById('keyStatus');
   if (key) {
     el.textContent = 'API Key gespeichert: ' + key.substring(0, 18) + '...';
     el.className = 'key-status ok';
   } else {
-    el.textContent = 'Kein API Key gespeichert – bitte eintragen';
+    el.textContent = 'Kein API Key gespeichert â bitte eintragen';
     el.className = 'key-status missing';
     document.getElementById('apiSection').style.display = 'block';
   }
@@ -144,10 +144,9 @@ function updateKeyStatus() {
 updateKeyStatus();
 
 async function generateQuiz() {
-  const key = getKey();
-  if (!key) { showError('Bitte zuerst den API Key eintragen.'); document.getElementById('apiSection').style.display = 'block'; return; }
+  const key = '';
   const text = document.getElementById('newsInput').value.trim();
-  if (!text || text.length < 80) { showError('Bitte füge mehr Text ein.'); return; }
+  if (!text || text.length < 80) { showError('Bitte fÃ¼ge mehr Text ein.'); return; }
 
   const perNews = parseInt(document.getElementById('perNewsSelect').value);
   const lang = document.getElementById('langSelect').value;
@@ -159,7 +158,7 @@ async function generateQuiz() {
   document.getElementById('errorDiv').innerHTML = '';
   allQuestions = [];
 
-  setLoadingText('Beiträge werden erkannt...');
+  setLoadingText('BeitrÃ¤ge werden erkannt...');
 
   let articles;
   try {
@@ -172,7 +171,7 @@ async function generateQuiz() {
   }
 
   if (!articles || articles.length === 0) {
-    showError('Keine Beiträge erkannt.');
+    showError('Keine BeitrÃ¤ge erkannt.');
     btn.disabled = false;
     document.getElementById('loadingDiv').style.display = 'none';
     return;
@@ -193,7 +192,7 @@ async function generateQuiz() {
 }
 
 async function splitArticles(text, key) {
-  const prompt = `Analysiere diesen News-Feed und trenne die einzelnen Beiträge.\nAntworte NUR mit einem JSON-Array, ohne Markdown, ohne Backticks.\nFormat: [{"title": "Kurzer Titel (max 60 Zeichen)", "content": "Vollständiger Beitragstext"}]\nIgnoriere Datum/Uhrzeit-Header. Mindestlänge pro Beitrag: 30 Wörter.\n\nText:\n${text.substring(0, 6000)}`;
+  const prompt = `Analysiere diesen News-Feed und trenne die einzelnen BeitrÃ¤ge.\nAntworte NUR mit einem JSON-Array, ohne Markdown, ohne Backticks.\nFormat: [{"title": "Kurzer Titel (max 60 Zeichen)", "content": "VollstÃ¤ndiger Beitragstext"}]\nIgnoriere Datum/Uhrzeit-Header. MindestlÃ¤nge pro Beitrag: 30 WÃ¶rter.\n\nText:\n${text.substring(0, 6000)}`;
   const data = await callAPI(prompt, key);
   const raw = data.content?.[0]?.text || '';
   return JSON.parse(raw.replace(/```json|```/g, '').trim());
@@ -207,14 +206,9 @@ async function generateForArticle(content, perNews, lang, key) {
 }
 
 async function callAPI(prompt, key) {
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
+  const res = await fetch('https://sunrise-proxy-production.up.railway.app/api/chat', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': key,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true'
-    },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 1000, messages: [{ role: 'user', content: prompt }] })
   });
   const data = await res.json();
@@ -226,7 +220,7 @@ function renderAllQuiz() {
   const letters = ['A', 'B', 'C'];
   const results = document.getElementById('resultsDiv');
   const totalQ = allQuestions.reduce((s, g) => s + g.questions.length, 0);
-  let html = `<div class="divider"></div><div class="results-header"><span>${totalQ} Fragen aus ${allQuestions.length} Beiträgen</span><button class="btn-secondary" onclick="exportQuiz()">Als .txt exportieren</button></div>`;
+  let html = `<div class="divider"></div><div class="results-header"><span>${totalQ} Fragen aus ${allQuestions.length} BeitrÃ¤gen</span><button class="btn-secondary" onclick="exportQuiz()">Als .txt exportieren</button></div>`;
   let gq = 0;
   allQuestions.forEach((group, gi) => {
     html += `<div class="news-group"><div class="news-group-header"><span class="news-group-num">Beitrag ${gi+1}</span><span class="news-group-title">${group.newsTitle}</span></div>`;
@@ -234,7 +228,7 @@ function renderAllQuiz() {
       const qid = `q${gi}_${qi}`; gq++;
       html += `<div class="quiz-card"><div class="quiz-num">Frage ${gq}</div><div class="quiz-question">${q.frage}</div><div class="options" id="opts-${qid}">`;
       q.optionen.forEach((opt, j) => { html += `<div class="option" onclick="selectOption('${qid}',${j},${q.richtig})"><span class="option-letter">${letters[j]}</span><span>${opt}</span></div>`; });
-      html += `</div><button class="show-answer-btn" onclick="showAnswer('${qid}',${q.richtig})">Auflösung anzeigen</button><div class="answer-box" id="answer-${qid}"><div class="answer-label">Richtige Antwort: ${letters[q.richtig]}</div>${q.erklaerung}</div></div>`;
+      html += `</div><button class="show-answer-btn" onclick="showAnswer('${qid}',${q.richtig})">AuflÃ¶sung anzeigen</button><div class="answer-box" id="answer-${qid}"><div class="answer-label">Richtige Antwort: ${letters[q.richtig]}</div>${q.erklaerung}</div></div>`;
     });
     html += `</div>`;
   });
@@ -255,11 +249,11 @@ function exportQuiz() {
   if (!allQuestions.length) return;
   const letters = ['A','B','C'];
   const now = new Date().toLocaleDateString('de-AT');
-  let txt = `SUNRISE APP – QUIZ (${now})\n` + '='.repeat(45) + '\n\n';
+  let txt = `SUNRISE APP â QUIZ (${now})\n` + '='.repeat(45) + '\n\n';
   let gq = 0;
   allQuestions.forEach((group, gi) => {
     txt += `BEITRAG ${gi+1}: ${group.newsTitle.toUpperCase()}\n` + '-'.repeat(40) + '\n\n';
-    group.questions.forEach(q => { gq++; txt += `Frage ${gq}: ${q.frage}\n`; q.optionen.forEach((o,j) => txt += `  ${letters[j]}) ${o}\n`); txt += `Antwort: ${letters[q.richtig]}\nErklärung: ${q.erklaerung}\n\n`; });
+    group.questions.forEach(q => { gq++; txt += `Frage ${gq}: ${q.frage}\n`; q.optionen.forEach((o,j) => txt += `  ${letters[j]}) ${o}\n`); txt += `Antwort: ${letters[q.richtig]}\nErklÃ¤rung: ${q.erklaerung}\n\n`; });
   });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([txt], {type:'text/plain'}));
