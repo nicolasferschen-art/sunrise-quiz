@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sunrise Quiz Generator</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; background: #f5f5f3; color: #1a1a1a; min-height: 100vh; padding: 2rem 1rem; }
+    .page { max-width: 760px; margin: 0 auto; }
+    header { margin-bottom: 2rem; }
+    header h1 { font-size: 22px; font-weight: 500; }
+    header p { font-size: 14px; color: #666; margin-top: 4px; }
+    .card { background: #fff; border: 0.5px solid rgba(0,0,0,0.12); border-radius: 12px; padding: 1.5rem; margin-bottom: 1rem; }
+    .section-label { font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 500; margin-bottom: 8px; }
+    textarea { width: 100%; min-height: 220px; padding: 12px; font-size: 14px; font-family: inherit; border: 0.5px solid rgba(0,0,0,0.2); border-radius: 8px; background: #fafafa; color: #1a1a1a; resize: vertical; line-height: 1.6; }
+    textarea:focus { outline: none; border-color: rgba(0,0,0,0.4); background: #fff; }
+    .hint { font-size: 12px; color: #999; margin-top: 8px; line-height: 1.5; }
+    .controls { display: flex; gap: 10px; align-items: center; margin-top: 14px; flex-wrap: wrap; }
+    select { padding: 8px 12px; font-size: 14px; border: 0.5px solid rgba(0,0,0,0.2); border-radius: 8px; background: #fff; color: #1a1a1a; cursor: pointer; }
+    .btn-primary { padding: 9px 20px; font-size: 14px; font-weight: 500; background: #1a1a1a; color: #fff; border: none; border-radius: 8px; cursor: pointer; transition: opacity 0.15s; }
+    .btn-primary:hover { opacity: 0.82; }
+    .btn-primary:disabled { opacity: 0.35; cursor: not-allowed; }
+    .btn-secondary { padding: 8px 16px; font-size: 13px; border: 0.5px solid rgba(0,0,0,0.2); border-radius: 8px; background: transparent; color: #1a1a1a; cursor: pointer; }
+    .btn-secondary:hover { background: #f0f0ee; }
+    .loading { display: none; align-items: center; gap: 10px; padding: 1.5rem 0; color: #888; font-size: 14px; }
+    .dot { width: 6px; height: 6px; border-radius: 50%; background: #bbb; animation: pulse 1.2s infinite; }
+    .dot:nth-child(2) { animation-delay: 0.2s; }
+    .dot:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes pulse { 0%,80%,100% { opacity: 0.25; } 40% { opacity: 1; } }
+    .divider { height: 0.5px; background: rgba(0,0,0,0.1); margin: 1.5rem 0; }
+    .results-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 10px; }
+    .results-header span { font-size: 15px; font-weight: 500; }
+    .news-group { margin-bottom: 2rem; }
+    .news-group-header { display: flex; align-items: baseline; gap: 10px; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 0.5px solid rgba(0,0,0,0.1); }
+    .news-group-num { font-size: 11px; color: #aaa; font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em; white-space: nowrap; }
+    .news-group-title { font-size: 14px; font-weight: 500; color: #1a1a1a; line-height: 1.4; }
+    .quiz-card { background: #fff; border: 0.5px solid rgba(0,0,0,0.1); border-radius: 12px; padding: 1.25rem; margin-bottom: 10px; }
+    .quiz-num { font-size: 11px; color: #aaa; font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; }
+    .quiz-question { font-size: 15px; font-weight: 500; line-height: 1.5; margin-bottom: 16px; }
+    .options { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+    .option { display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; border: 0.5px solid rgba(0,0,0,0.1); border-radius: 8px; cursor: pointer; font-size: 14px; line-height: 1.4; transition: background 0.1s; }
+    .option:hover { background: #f5f5f3; }
+    .option.correct { background: #eaf3de; border-color: #639922; color: #3b6d11; }
+    .option.wrong { background: #fcebeb; border-color: #e24b4a; color: #a32d2d; }
+    .option-letter { font-weight: 500; min-width: 18px; font-size: 13px; flex-shrink: 0; }
+    .show-answer-btn { font-size: 12px; color: #999; background: none; border: none; cursor: pointer; padding: 0; text-decoration: underline; }
+    .show-answer-btn:hover { color: #1a1a1a; }
+    .answer-box { display: none; background: #f5f5f3; border-radius: 8px; padding: 12px; font-size: 13px; color: #555; line-height: 1.6; margin-top: 10px; }
+    .answer-box.visible { display: block; }
+    .answer-label { font-weight: 500; color: #1a1a1a; margin-bottom: 4px; }
+    .error { color: #a32d2d; font-size: 14px; margin-top: 1rem; padding: 12px; background: #fcebeb; border-radius: 8px; }
+    @media (max-width: 480px) { .controls { flex-direction: column; align-items: stretch; } .btn-primary { text-align: center; } }
+  </style>
+</head>
+<body>
+<div class="page">
+  <header>
+    <h1>Sunrise Quiz Generator</h1>
+    <p>Mehrere News einfügen → pro Beitrag werden separate Fragen erstellt</p>
+  </header>
+
+  <div class="card">
+    <div class="section-label">News-Inhalte einfügen</div>
+    <textarea id="newsInput" placeholder="Füge hier dein gesamtes News-Update ein – z.B. das Wirtschafts & Finanz-Update mit mehreren Beiträgen. Der Generator erkennt automatisch die einzelnen News und erstellt pro Beitrag separate Fragen."></textarea>
+    <p class="hint">Tipp: Einfach den gesamten Text aus der sunrise.app Extension hineinkopieren – je mehr Beiträge, desto mehr Fragen.</p>
+
+    <div class="controls">
+      <select id="perNewsSelect">
+        <option value="1">1 Frage pro Beitrag</option>
+        <option value="2" selected>2 Fragen pro Beitrag</option>
+        <option value="3">3 Fragen pro Beitrag</option>
+      </select>
+      <select id="langSelect">
+        <option value="Deutsch" selected>Deutsch</option>
+        <option value="Englisch">Englisch</option>
+      </select>
+      <button class="btn-primary" id="generateBtn" onclick="generateQuiz()">Quiz generieren</button>
+    </div>
+
+    <div id="loadingDiv" class="loading">
+      <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+      <span id="loadingText">Beiträge werden analysiert...</span>
+    </div>
+    <div id="errorDiv"></div>
+  </div>
+
+  <div id="resultsDiv"></div>
+</div>
+
+<script>
+const API_KEY = 'DEIN_API_KEY_HIER';
+let allQuestions = [];
+
+async function generateQuiz() {
+  const text = document.getElementById('newsInput').value.trim();
+  if (!text || text.length < 80) { showError('Bitte füge mehr Text ein.'); return; }
+
+  const perNews = parseInt(document.getElementById('perNewsSelect').value);
+  const lang = document.getElementById('langSelect').value;
+  const btn = document.getElementById('generateBtn');
+
+  btn.disabled = true;
+  document.getElementById('loadingDiv').style.display = 'flex';
+  document.getElementById('resultsDiv').innerHTML = '';
+  document.getElementById('errorDiv').innerHTML = '';
+  allQuestions = [];
+
+  setLoadingText('Beiträge werden erkannt...');
+
+  let articles;
+  try {
+    articles = await splitArticles(text);
+  } catch(e) {
+    showError('Fehler beim Aufteilen: ' + e.message);
+    btn.disabled = false;
+    document.getElementById('loadingDiv').style.display = 'none';
+    return;
+  }
+
+  if (!articles || articles.length === 0) {
+    showError('Keine Beiträge erkannt. Bitte prüfe den Text.');
+    btn.disabled = false;
+    document.getElementById('loadingDiv').style.display = 'none';
+    return;
+  }
+
+  for (let i = 0; i < articles.length; i++) {
+    setLoadingText(`Beitrag ${i+1} von ${articles.length} wird verarbeitet...`);
+    try {
+      const questions = await generateForArticle(articles[i].content, perNews, lang);
+      allQuestions.push({ newsTitle: articles[i].title, newsIndex: i, questions });
+    } catch(e) { console.warn('Fehler bei Beitrag', i+1, e); }
+  }
+
+  btn.disabled = false;
+  document.getElementById('loadingDiv').style.display = 'none';
+
+  if (allQuestions.length === 0) { showError('Keine Fragen generiert. Bitte versuche es nochmal.'); return; }
+  renderAllQuiz();
+}
+
+async function splitArticles(text) {
+  const prompt = `Analysiere diesen News-Feed und trenne die einzelnen Beiträge.
+Antworte NUR mit einem JSON-Array, ohne Markdown, ohne Backticks.
+Format: [{"title": "Kurzer Titel (max 60 Zeichen)", "content": "Vollständiger Beitragstext"}]
+Ignoriere Datum/Uhrzeit-Header. Mindestlänge pro Beitrag: 30 Wörter.
+
+Text:
+${text.substring(0, 6000)}`;
+
+  const data = await callAPI(prompt);
+  const raw = data.content?.[0]?.text || '';
+  return JSON.parse(raw.replace(/```json|```/g, '').trim());
+}
+
+async function generateForArticle(content, perNews, lang) {
+  const prompt = `Erstelle genau ${perNews} Quiz-Frage(n) auf ${lang} zu diesem Beitrag.
+Antworte NUR mit JSON-Array, ohne Markdown, ohne Backticks.
+Format: [{"frage": "...?", "optionen": ["A", "B", "C"], "richtig": 0, "erklaerung": "..."}]
+"richtig" = Index der richtigen Option (0, 1 oder 2).
+
+Beitrag:
+${content.substring(0, 2000)}`;
+
+  const data = await callAPI(prompt);
+  const raw = data.content?.[0]?.text || '';
+  return JSON.parse(raw.replace(/```json|```/g, '').trim());
+}
+
+async function callAPI(prompt) {
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': API_KEY,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true'
+    },
+    body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 1000, messages: [{ role: 'user', content: prompt }] })
+  });
+  const data = await res.json();
+  if (data.error) throw new Error(data.error.message);
+  return data;
+}
+
+function renderAllQuiz() {
+  const letters = ['A', 'B', 'C'];
+  const results = document.getElementById('resultsDiv');
+  const totalQ = allQuestions.reduce((s, g) => s + g.questions.length, 0);
+
+  let html = `<div class="divider"></div>
+    <div class="results-header">
+      <span>${totalQ} Fragen aus ${allQuestions.length} Beiträgen</span>
+      <button class="btn-secondary" onclick="exportQuiz()">Als .txt exportieren</button>
+    </div>`;
+
+  let gq = 0;
+  allQuestions.forEach((group, gi) => {
+    html += `<div class="news-group">
+      <div class="news-group-header">
+        <span class="news-group-num">Beitrag ${gi+1}</span>
+        <span class="news-group-title">${group.newsTitle}</span>
+      </div>`;
+
+    group.questions.forEach((q, qi) => {
+      const qid = `q${gi}_${qi}`;
+      gq++;
+      html += `<div class="quiz-card">
+        <div class="quiz-num">Frage ${gq}</div>
+        <div class="quiz-question">${q.frage}</div>
+        <div class="options" id="opts-${qid}">`;
+      q.optionen.forEach((opt, j) => {
+        html += `<div class="option" onclick="selectOption('${qid}',${j},${q.richtig})"><span class="option-letter">${letters[j]}</span><span>${opt}</span></div>`;
+      });
+      html += `</div>
+        <button class="show-answer-btn" onclick="showAnswer('${qid}',${q.richtig})">Auflösung anzeigen</button>
+        <div class="answer-box" id="answer-${qid}">
+          <div class="answer-label">Richtige Antwort: ${letters[q.richtig]}</div>
+          ${q.erklaerung}
+        </div>
+      </div>`;
+    });
+    html += `</div>`;
+  });
+  results.innerHTML = html;
+}
+
+function selectOption(qid, oi, richtig) {
+  document.querySelectorAll(`#opts-${qid} .option`).forEach((el, j) => {
+    el.onclick = null;
+    if (j === richtig) el.classList.add('correct');
+    else if (j === oi) el.classList.add('wrong');
+  });
+  document.getElementById(`answer-${qid}`).classList.add('visible');
+}
+
+function showAnswer(qid, richtig) {
+  document.querySelectorAll(`#opts-${qid} .option`).forEach((el, j) => {
+    el.onclick = null;
+    if (j === richtig) el.classList.add('correct');
+  });
+  document.getElementById(`answer-${qid}`).classList.add('visible');
+}
+
+function exportQuiz() {
+  if (!allQuestions.length) return;
+  const letters = ['A','B','C'];
+  const now = new Date().toLocaleDateString('de-AT');
+  let txt = `SUNRISE APP – QUIZ (${now})\n` + '='.repeat(45) + '\n\n';
+  let gq = 0;
+  allQuestions.forEach((group, gi) => {
+    txt += `BEITRAG ${gi+1}: ${group.newsTitle.toUpperCase()}\n` + '-'.repeat(40) + '\n\n';
+    group.questions.forEach(q => {
+      gq++;
+      txt += `Frage ${gq}: ${q.frage}\n`;
+      q.optionen.forEach((o,j) => txt += `  ${letters[j]}) ${o}\n`);
+      txt += `Antwort: ${letters[q.richtig]}\nErklärung: ${q.erklaerung}\n\n`;
+    });
+  });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([txt], {type:'text/plain'}));
+  a.download = `sunrise-quiz-${new Date().toISOString().slice(0,10)}.txt`;
+  a.click();
+}
+
+function setLoadingText(msg) { document.getElementById('loadingText').textContent = msg; }
+function showError(msg) { document.getElementById('errorDiv').innerHTML = `<div class="error">${msg}</div>`; }
+</script>
+</body>
+</html>
