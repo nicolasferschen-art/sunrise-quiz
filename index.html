@@ -137,10 +137,14 @@ async function generateQuiz() {
 }
 
 async function splitArticles(text) {
-  const prompt = 'Analysiere diesen News-Feed und trenne die einzelnen Beitraege.\nAntworte NUR mit einem JSON-Array, ohne Markdown, ohne Backticks.\nFormat: [{"title": "Kurzer Titel (max 60 Zeichen)", "content": "Vollstaendiger Beitragstext"}]\nIgnoriere Datum/Uhrzeit-Header. Mindestlaenge pro Beitrag: 30 Woerter.\n\nText:\n' + text.substring(0, 6000);
-  const data = await callAPI(prompt);
-  const raw = data.content?.[0]?.text || '';
-  return JSON.parse(raw.replace(/```json|```/g, '').trim());
+  const res = await fetch(PROXY_URL.replace('/api/chat', '/api/split'), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text: text.substring(0, 6000) })
+  });
+  const data = await res.json();
+  if (data.error) throw new Error(data.error);
+  return data.articles.map(a => ({ title: a.title, content: a.body || a.content || '' }));
 }
 
 async function generateForArticle(content, perNews, lang) {
